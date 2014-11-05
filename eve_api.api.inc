@@ -330,7 +330,9 @@ function eve_api_curl_http_request($url, array $options = array()) {
     CURLOPT_USERAGENT => $user_agent,
     CURLOPT_SSL_VERIFYPEER => TRUE,
     CURLOPT_SSL_VERIFYHOST => 2,
-    CURLOPT_CAINFO => drupal_get_path('module', 'eve_api') . '/eveonline.crt',
+    // if uncomment next line, then curl return CURLE_SSL_CACERT_BADFILE
+    // see http://curl.haxx.se/libcurl/c/libcurl-errors.html#CURLESSLCACERTBADFILE
+    // CURLOPT_CAINFO => drupal_get_path('module', 'eve_api') . '/eveonline.crt',
     CURLOPT_COOKIEJAR => drupal_get_path('module', 'eve_api') . '/cookies.txt',
   );
 
@@ -444,6 +446,7 @@ function eve_api_curl_http_request($url, array $options = array()) {
   // status message, and response headers.
   $result->data = trim(curl_exec($ch));
   $result->error = curl_error($ch);
+  // see http://curl.haxx.se/libcurl/c/libcurl-errors.html
   $result->errno = curl_errno($ch);
 
   // If there's been an error, do not continue.
