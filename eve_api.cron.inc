@@ -716,7 +716,6 @@ function eve_api_cron_import_character_sheet($item) {
   $sheet_query = $query + array('characterID' => (int) $character_id);
   $character_sheet = eve_api_get_character_sheet_api($sheet_query);
   $error = 0;
-
   if (isset($character_sheet['error'])) {
     $error = (int) $character_sheet['error'];
 
