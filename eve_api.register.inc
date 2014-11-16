@@ -209,7 +209,7 @@ function eve_api_form_user_register_form_alter(&$form, &$form_state) {
     }
   }
 
-  if (!eve_api_verify_blue($characters)) {
+  if (!eve_api_verify_blue($characters) && !variable_get('eve_api_require_blue', FALSE)) {
     form_set_error('keyID', t('Unknown Error, please try again.'));
     form_set_error('vCode');
     drupal_goto('user/register');
