@@ -293,7 +293,8 @@ function eve_api_schema() {
         'type' => 'text',
         'not null' => FALSE,
       ),
-    ) + _eve_api_phoebe_fields($small_int, $big_int, $date),
+    ) + _eve_api_phoebe_fields($small_int, $big_int, $date)
+    + _eve_api_fix_character_sheet_or_info_fields($small_int),
     'primary key' => array('characterID'),
   );
 
@@ -506,7 +507,8 @@ function eve_api_schema() {
         'type' => 'text',
         'not null' => FALSE,
       ),
-    ),
+    ) + _eve_api_fix_character_sheet_or_info_fields($small_int)
+    + _eve_api_fix_character_info_fields($varchar),
     'primary key' => array('characterID'),
   );
 
@@ -1695,4 +1697,87 @@ function eve_api_update_7204(&$sandbox) {
     ));
   }
   variable_set('eve_api_cron_api_users_next', time() + (59 * 60));
+}
+
+/**
+ * Define fields: bloodLineID and ancestryID.
+ *
+ * @return array fields
+ *
+ */
+function _eve_api_fix_character_sheet_or_info_fields($small_int) {
+
+  return array(
+    'bloodLineID' => array(
+      'description' => '',
+    ) + $small_int,
+    'ancestryID' => array(
+      'description' => '',
+    ) + $small_int,
+  );
+
+}
+
+/**
+ * Define a field 'ancestry'.
+ *
+ * @return array fields
+ *
+ */
+function _eve_api_fix_character_info_fields($varchar) {
+
+  return array(
+    'ancestry' => array(
+      'description' => 'Ancestry of the character.',
+      'not null' => TRUE,
+    ) + $varchar,
+  );
+
+}
+
+/**
+ * Update RC9 to RC9p2. Update 'eve_api_character_sheet' table.
+ */
+function eve_api_update_7205(&$sandbox) {
+
+  $small_int = array(
+    'type' => 'int',
+    'size' => 'small',
+    'length' => 3,
+    'not null' => FALSE,
+    'default' => 0,
+  );
+
+  $varchar = array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'default' => '',
+  );
+
+  $new_fields = _eve_api_fix_character_sheet_or_info_fields($small_int);
+  foreach ($new_fields as $field => $spec) {
+    db_add_field('eve_api_character_sheet', $field, $spec);
+    db_add_field('eve_api_character_info', $field, $spec);
+  }
+
+  $new_fields = _eve_api_fix_character_info_fields($varchar);
+  foreach ($new_fields as $field => $spec) {
+    db_add_field('eve_api_character_info', $field, $spec);
+  }
+
+  $queue = DrupalQueue::get('eve_api_cron_api_user_sync');
+  $result = db_select('users', 'u')
+    ->fields('u', array('uid'))
+    ->condition('uid', 0, '<>')
+    ->execute();
+  while ($record = $result->fetchAssoc()) {
+    $queue->createItem(array(
+      'uid' => $record['uid'],
+      'runs' => 1,
+    ));
+  }
+
+  variable_set('eve_api_cron_api_users_next', time() + (59 * 60));
+
 }
